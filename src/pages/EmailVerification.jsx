@@ -46,15 +46,20 @@ const EmailVerification = () => {
     }
   };
 
-  const handleCheckVerification = async () => {
+    const handleCheckVerification = async () => {
     if (!currentUser) return;
-
+    
     try {
       // Reload user to check if email is verified
       await currentUser.reload();
-
+      
       if (currentUser.emailVerified) {
-        navigate("/profile-setup");
+        // Check if user already has a profile
+        if (userProfile && userProfile.profileCompleted) {
+          navigate("/chats");
+        } else {
+          navigate("/profile-setup");
+        }
       }
     } catch (error) {
       console.error("Error checking verification:", error);

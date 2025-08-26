@@ -41,11 +41,16 @@ const Login = () => {
       return;
     }
 
-    try {
+        try {
       const result = await login(email, password);
-
+      
       if (result.success) {
-        navigate("/profile-setup");
+        // Check if user already has a profile
+        if (result.userProfile && result.userProfile.profileCompleted) {
+          navigate("/chats");
+        } else {
+          navigate("/profile-setup");
+        }
       } else {
         setError(result.error);
       }

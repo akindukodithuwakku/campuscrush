@@ -15,6 +15,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import EmailVerification from "./pages/EmailVerification";
+import ProfileSetup from "./pages/ProfileSetup";
 
 function App() {
   return (
@@ -33,20 +34,7 @@ function App() {
               path="/profile-setup"
               element={
                 <ProtectedRoute>
-                  <div className="min-h-screen bg-gradient-to-br from-romantic-50 via-primary-50 to-secondary-50 flex items-center justify-center">
-                    <div className="text-center">
-                      <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                        Profile Setup Coming Soon!
-                      </h1>
-                      <p className="text-gray-600 mb-6">
-                        This is where users will complete their profiles after
-                        email verification.
-                      </p>
-                      <div className="w-32 h-32 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-white text-4xl">👤</span>
-                      </div>
-                    </div>
-                  </div>
+                  <ProfileSetup />
                 </ProtectedRoute>
               }
             />
