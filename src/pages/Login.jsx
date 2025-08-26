@@ -41,9 +41,9 @@ const Login = () => {
       return;
     }
 
-        try {
+    try {
       const result = await login(email, password);
-      
+
       if (result.success) {
         // Check if user already has a profile
         if (result.userProfile && result.userProfile.profileCompleted) {

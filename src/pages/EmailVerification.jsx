@@ -46,13 +46,13 @@ const EmailVerification = () => {
     }
   };
 
-    const handleCheckVerification = async () => {
+  const handleCheckVerification = async () => {
     if (!currentUser) return;
-    
+
     try {
       // Reload user to check if email is verified
       await currentUser.reload();
-      
+
       if (currentUser.emailVerified) {
         // Check if user already has a profile
         if (userProfile && userProfile.profileCompleted) {
@@ -224,4 +224,3 @@ const EmailVerification = () => {
 };
 
 export default EmailVerification;
-

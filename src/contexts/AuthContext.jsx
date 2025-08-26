@@ -1,21 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import React, { createContext, useContext, useState, useEffect } from "react";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   sendEmailVerification,
-  updateProfile
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+  updateProfile,
+} from "firebase/auth";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -28,23 +34,27 @@ export const AuthProvider = ({ children }) => {
   // Sign up function
   const signup = async (email, password, displayName) => {
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       // Update profile with display name
       await updateProfile(result.user, { displayName });
-      
+
       // Send email verification
       await sendEmailVerification(result.user);
-      
+
       // Create user profile in Firestore
-      await setDoc(doc(db, 'users', result.user.uid), {
+      await setDoc(doc(db, "users", result.user.uid), {
         uid: result.user.uid,
         email: result.user.email,
         displayName: displayName,
         emailVerified: false,
         profileCompleted: false,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
       return { success: true, user: result.user };
@@ -57,14 +67,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      
+
       // Get user profile after successful login
       const profile = await getUserProfile(result.user.uid);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         user: result.user,
-        userProfile: profile
+        userProfile: profile,
       };
     } catch (error) {
       return { success: false, error: error.message };
@@ -85,13 +95,13 @@ export const AuthProvider = ({ children }) => {
   // Get user profile from Firestore
   const getUserProfile = async (uid) => {
     try {
-      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userDoc = await getDoc(doc(db, "users", uid));
       if (userDoc.exists()) {
         return userDoc.data();
       }
       return null;
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      console.error("Error getting user profile:", error);
       return null;
     }
   };
@@ -99,28 +109,28 @@ export const AuthProvider = ({ children }) => {
   // Update user profile
   const updateUserProfile = async (profileData) => {
     if (!currentUser) {
-      return { success: false, error: 'No user logged in' };
+      return { success: false, error: "No user logged in" };
     }
 
     try {
-      const userRef = doc(db, 'users', currentUser.uid);
+      const userRef = doc(db, "users", currentUser.uid);
       await updateDoc(userRef, {
         ...profileData,
         updatedAt: serverTimestamp(),
-        profileCompleted: true
+        profileCompleted: true,
       });
 
       // Update local state
-      setUserProfile(prev => ({
+      setUserProfile((prev) => ({
         ...prev,
         ...profileData,
-        profileCompleted: true
+        profileCompleted: true,
       }));
 
       return { success: true };
     } catch (error) {
-      console.error('Error updating profile:', error);
-      return { success: false, error: 'Failed to update profile' };
+      console.error("Error updating profile:", error);
+      return { success: false, error: "Failed to update profile" };
     }
   };
 
@@ -132,7 +142,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      
+
       if (user) {
         // Get user profile from Firestore
         const profile = await getUserProfile(user.uid);
@@ -140,7 +150,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -156,7 +166,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     getUserProfile,
     updateUserProfile,
-    isProfileComplete
+    isProfileComplete,
   };
 
   return (
@@ -165,5 +175,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-

@@ -6,35 +6,35 @@ import Lottie from "lottie-react";
 const ProfileSetup = () => {
   const { currentUser, userProfile, updateUserProfile } = useAuth();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     // Personal Information
     firstName: "",
     lastName: "",
     dateOfBirth: "",
     gender: "",
-    
+
     // University Information
     studentId: "",
     faculty: "",
     department: "",
     yearOfStudy: "",
     semester: "",
-    
+
     // Profile Details
     bio: "",
     interests: [],
     lookingFor: "",
-    
+
     // Contact Preferences
     showEmail: false,
     showPhone: false,
-    
+
     // Profile Picture
     profilePicture: null,
-    profilePicturePreview: null
+    profilePicturePreview: null,
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
@@ -46,61 +46,73 @@ const ProfileSetup = () => {
       navigate("/login");
       return;
     }
-    
+
     if (!currentUser.emailVerified) {
       navigate("/email-verification");
       return;
     }
-    
+
     // Load existing profile data if available
     if (userProfile) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        ...userProfile
+        ...userProfile,
       }));
     }
   }, [currentUser, userProfile, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    
+
     if (type === "file" && files[0]) {
       const file = files[0];
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         profilePicture: file,
-        profilePicturePreview: URL.createObjectURL(file)
+        profilePicturePreview: URL.createObjectURL(file),
       }));
     } else if (type === "checkbox") {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: checked
+        [name]: checked,
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
 
   const handleInterestChange = (interest) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       interests: prev.interests.includes(interest)
-        ? prev.interests.filter(i => i !== interest)
-        : [...prev.interests, interest]
+        ? prev.interests.filter((i) => i !== interest)
+        : [...prev.interests, interest],
     }));
   };
 
   const validateStep = (step) => {
     switch (step) {
       case 1:
-        return formData.firstName && formData.lastName && formData.dateOfBirth && formData.gender;
+        return (
+          formData.firstName &&
+          formData.lastName &&
+          formData.dateOfBirth &&
+          formData.gender
+        );
       case 2:
-        return formData.studentId && formData.faculty && formData.department && formData.yearOfStudy;
+        return (
+          formData.studentId &&
+          formData.faculty &&
+          formData.department &&
+          formData.yearOfStudy
+        );
       case 3:
-        return formData.bio && formData.interests.length > 0 && formData.lookingFor;
+        return (
+          formData.bio && formData.interests.length > 0 && formData.lookingFor
+        );
       default:
         return true;
     }
@@ -108,7 +120,7 @@ const ProfileSetup = () => {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
       setError("");
     } else {
       setError("Please fill in all required fields before proceeding.");
@@ -116,7 +128,7 @@ const ProfileSetup = () => {
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
     setError("");
   };
 
@@ -162,7 +174,7 @@ const ProfileSetup = () => {
           r: { a: 0, k: 0 },
           p: { a: 0, k: [200, 200, 0] },
           a: { a: 0, k: [0, 0, 0] },
-          s: { a: 0, k: [100, 100, 100] }
+          s: { a: 0, k: [100, 100, 100] },
         },
         ao: 0,
         shapes: [
@@ -173,13 +185,13 @@ const ProfileSetup = () => {
                 d: 1,
                 ty: "el",
                 s: { a: 0, k: [100, 100] },
-                p: { a: 0, k: [0, 0] }
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                p: { a: 0, k: [0, 0] },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   if (!currentUser || !currentUser.emailVerified) {
@@ -207,17 +219,21 @@ const ProfileSetup = () => {
           <div className="flex items-center justify-between mb-2">
             {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step <= currentStep 
-                    ? "bg-primary-500 text-white" 
-                    : "bg-gray-200 text-gray-600"
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step <= currentStep
+                      ? "bg-primary-500 text-white"
+                      : "bg-gray-200 text-gray-600"
+                  }`}
+                >
                   {step}
                 </div>
                 {step < 4 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    step < currentStep ? "bg-primary-500" : "bg-gray-200"
-                  }`} />
+                  <div
+                    className={`w-16 h-1 mx-2 ${
+                      step < currentStep ? "bg-primary-500" : "bg-gray-200"
+                    }`}
+                  />
                 )}
               </div>
             ))}
@@ -236,7 +252,7 @@ const ProfileSetup = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   Personal Information
                 </h2>
-                
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -252,7 +268,7 @@ const ProfileSetup = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Last Name *
@@ -267,7 +283,7 @@ const ProfileSetup = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Date of Birth *
@@ -281,7 +297,7 @@ const ProfileSetup = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Gender *
@@ -297,7 +313,9 @@ const ProfileSetup = () => {
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
-                      <option value="prefer-not-to-say">Prefer not to say</option>
+                      <option value="prefer-not-to-say">
+                        Prefer not to say
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -310,7 +328,7 @@ const ProfileSetup = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   University Information
                 </h2>
-                
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -326,7 +344,7 @@ const ProfileSetup = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Faculty *
@@ -347,7 +365,7 @@ const ProfileSetup = () => {
                       <option value="science">Science</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Department *
@@ -362,7 +380,7 @@ const ProfileSetup = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -383,7 +401,7 @@ const ProfileSetup = () => {
                         <option value="5">5th Year</option>
                       </select>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Semester *
@@ -411,7 +429,7 @@ const ProfileSetup = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   Profile Details
                 </h2>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Bio *
@@ -429,30 +447,50 @@ const ProfileSetup = () => {
                     {formData.bio.length}/500 characters
                   </p>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Interests * (Select at least 3)
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[
-                      "Technology", "Sports", "Music", "Reading", "Travel", "Cooking",
-                      "Gaming", "Art", "Photography", "Fitness", "Movies", "Dancing",
-                      "Writing", "Nature", "Fashion", "Food", "Languages", "Volunteering"
+                      "Technology",
+                      "Sports",
+                      "Music",
+                      "Reading",
+                      "Travel",
+                      "Cooking",
+                      "Gaming",
+                      "Art",
+                      "Photography",
+                      "Fitness",
+                      "Movies",
+                      "Dancing",
+                      "Writing",
+                      "Nature",
+                      "Fashion",
+                      "Food",
+                      "Languages",
+                      "Volunteering",
                     ].map((interest) => (
-                      <label key={interest} className="flex items-center space-x-2 cursor-pointer">
+                      <label
+                        key={interest}
+                        className="flex items-center space-x-2 cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           checked={formData.interests.includes(interest)}
                           onChange={() => handleInterestChange(interest)}
                           className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                         />
-                        <span className="text-sm text-gray-700">{interest}</span>
+                        <span className="text-sm text-gray-700">
+                          {interest}
+                        </span>
                       </label>
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Looking For *
@@ -469,7 +507,9 @@ const ProfileSetup = () => {
                     <option value="relationship">Relationship</option>
                     <option value="study-partner">Study Partner</option>
                     <option value="casual-dating">Casual Dating</option>
-                    <option value="serious-relationship">Serious Relationship</option>
+                    <option value="serious-relationship">
+                      Serious Relationship
+                    </option>
                     <option value="networking">Networking</option>
                   </select>
                 </div>
@@ -482,7 +522,7 @@ const ProfileSetup = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   Final Details
                 </h2>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Profile Picture
@@ -513,10 +553,12 @@ const ProfileSetup = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900">Privacy Settings</h3>
-                  
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Privacy Settings
+                  </h3>
+
                   <div className="flex items-center space-x-3">
                     <input
                       type="checkbox"
@@ -529,7 +571,7 @@ const ProfileSetup = () => {
                       Allow others to see my email address
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3">
                     <input
                       type="checkbox"
@@ -563,7 +605,7 @@ const ProfileSetup = () => {
               >
                 Previous
               </button>
-              
+
               <div className="flex space-x-4">
                 {currentStep < 4 ? (
                   <button
@@ -581,14 +623,30 @@ const ProfileSetup = () => {
                   >
                     {isSubmitting ? (
                       <div className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
                         </svg>
                         Completing Profile...
                       </div>
                     ) : (
-                      'Complete Profile'
+                      "Complete Profile"
                     )}
                   </button>
                 )}
