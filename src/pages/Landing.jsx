@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 const Landing = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -68,20 +69,26 @@ const Landing = () => {
               </span>
             </div>
 
-            <div className="hidden md:flex space-x-8">
-              {navItems.map((item) => (
+                        <div className="hidden md:flex space-x-8">
+              {navItems.slice(0, -1).map((item) => (
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
                   className={`font-medium transition-all duration-300 hover:text-primary-600 ${
-                    activeSection === item.id
-                      ? "text-primary-600 scale-110"
+                    activeSection === item.id 
+                      ? "text-primary-600 scale-110" 
                       : "text-gray-700"
                   }`}
                 >
                   {item.label}
                 </button>
               ))}
+              <Link
+                to="/login"
+                className="font-medium transition-all duration-300 hover:text-primary-600 text-gray-700"
+              >
+                Get Started
+              </Link>
             </div>
 
             <div className="md:hidden">
@@ -104,14 +111,14 @@ const Landing = () => {
               relationships. Find your perfect study partner, make lifelong
               friends, or discover something more.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
-                onClick={() => scrollToSection("register")}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link 
+                to="/signup"
                 className="btn-primary text-lg px-8 py-4"
               >
                 Start Your Journey
-              </button>
-              <button
+              </Link>
+              <button 
                 onClick={() => scrollToSection("features")}
                 className="btn-secondary text-lg px-8 py-4"
               >
@@ -413,7 +420,7 @@ const Landing = () => {
                   Connect with peers, find study partners, and build meaningful
                   relationships
                 </p>
-                <button className="btn-primary">Sign Up Free</button>
+                <Link to="/signup" className="btn-primary">Sign Up Free</Link>
               </div>
               <div className="text-center p-6 bg-gradient-to-br from-accent-50 to-romantic-50 rounded-xl">
                 <div className="text-4xl mb-4">💼</div>
