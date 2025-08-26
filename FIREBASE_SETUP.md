@@ -1,6 +1,6 @@
-# Firebase Setup for Campus Crush
+# Firebase Setup for Campus Crush - University of Moratuwa
 
-## 🔥 Setting Up Firebase Authentication
+## 🔥 Setting Up Firebase Authentication for UOM Students
 
 ### 1. Create a Firebase Project
 
@@ -46,7 +46,7 @@ const firebaseConfig = {
   projectId: "your-project-id",
   storageBucket: "your-project.appspot.com",
   messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+  appId: "1:123456789:web:abcdef123456",
 };
 ```
 
@@ -72,6 +72,8 @@ service cloud.firestore {
 3. Check Firebase Console to see if users are created
 4. Test email verification flow
 
+**Note:** The app is configured to only accept University of Moratuwa email addresses (@uom.lk domain)
+
 ## 🚨 Important Notes
 
 - **Never commit your actual Firebase config to version control**
@@ -84,14 +86,17 @@ service cloud.firestore {
 ### Common Issues:
 
 1. **"Firebase: Error (auth/invalid-api-key)"**
+
    - Check your API key in the config
    - Ensure the key is correct and not truncated
 
 2. **"Firebase: Error (auth/operation-not-allowed)"**
+
    - Enable Email/Password authentication in Firebase Console
    - Check if your project is properly configured
 
 3. **"Firebase: Error (auth/network-request-failed)"**
+
    - Check your internet connection
    - Verify Firebase project is active
 

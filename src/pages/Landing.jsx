@@ -69,14 +69,14 @@ const Landing = () => {
               </span>
             </div>
 
-                        <div className="hidden md:flex space-x-8">
+            <div className="hidden md:flex space-x-8">
               {navItems.slice(0, -1).map((item) => (
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
                   className={`font-medium transition-all duration-300 hover:text-primary-600 ${
-                    activeSection === item.id 
-                      ? "text-primary-600 scale-110" 
+                    activeSection === item.id
+                      ? "text-primary-600 scale-110"
                       : "text-gray-700"
                   }`}
                 >
@@ -106,19 +106,16 @@ const Landing = () => {
               <span className="gradient-text">Campus Crush</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
-              The ultimate university chat app that connects students through
-              meaningful conversations, shared interests, and authentic
-              relationships. Find your perfect study partner, make lifelong
-              friends, or discover something more.
+              The ultimate University of Moratuwa chat app that connects
+              students through meaningful conversations, shared interests, and
+              authentic relationships. Find your perfect study partner, make
+              lifelong friends, or discover something more.
             </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link 
-                to="/signup"
-                className="btn-primary text-lg px-8 py-4"
-              >
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link to="/signup" className="btn-primary text-lg px-8 py-4">
                 Start Your Journey
               </Link>
-              <button 
+              <button
                 onClick={() => scrollToSection("features")}
                 className="btn-secondary text-lg px-8 py-4"
               >
@@ -151,11 +148,11 @@ const Landing = () => {
             </h2>
             <p className="text-xl text-gray-700 leading-relaxed max-w-4xl mx-auto">
               Campus Crush is more than just a dating app – it's a comprehensive
-              platform designed specifically for university students. We
-              understand the unique challenges and opportunities of campus life,
-              and we've created a safe, engaging environment where students can
-              connect based on shared academic interests, career goals, and
-              personal passions.
+              platform designed specifically for University of Moratuwa
+              students. We understand the unique challenges and opportunities of
+              campus life, and we've created a safe, engaging environment where
+              students can connect based on shared academic interests, career
+              goals, and personal passions.
             </p>
             <div className="grid md:grid-cols-3 gap-8 mt-12">
               <div className="text-center">
@@ -420,7 +417,9 @@ const Landing = () => {
                   Connect with peers, find study partners, and build meaningful
                   relationships
                 </p>
-                <Link to="/signup" className="btn-primary">Sign Up Free</Link>
+                <Link to="/signup" className="btn-primary">
+                  Sign Up Free
+                </Link>
               </div>
               <div className="text-center p-6 bg-gradient-to-br from-accent-50 to-romantic-50 rounded-xl">
                 <div className="text-4xl mb-4">💼</div>

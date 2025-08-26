@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Lottie from 'lottie-react';
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import Lottie from "lottie-react";
 
 const EmailVerification = () => {
   const location = useLocation();
@@ -10,12 +10,13 @@ const EmailVerification = () => {
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
-  const email = location.state?.email || (currentUser?.email || '');
-  const displayName = location.state?.displayName || (currentUser?.displayName || '');
+  const email = location.state?.email || currentUser?.email || "";
+  const displayName =
+    location.state?.displayName || currentUser?.displayName || "";
 
   useEffect(() => {
     if (!email) {
-      navigate('/signup');
+      navigate("/signup");
       return;
     }
 
@@ -34,29 +35,29 @@ const EmailVerification = () => {
 
   const handleResendEmail = async () => {
     if (!currentUser) return;
-    
+
     try {
       // This would typically call a function to resend verification email
       setCountdown(60);
       setCanResend(false);
       // You can add a toast notification here
     } catch (error) {
-      console.error('Error resending email:', error);
+      console.error("Error resending email:", error);
     }
   };
 
   const handleCheckVerification = async () => {
     if (!currentUser) return;
-    
+
     try {
       // Reload user to check if email is verified
       await currentUser.reload();
-      
+
       if (currentUser.emailVerified) {
-        navigate('/profile-setup');
+        navigate("/profile-setup");
       }
     } catch (error) {
-      console.error('Error checking verification:', error);
+      console.error("Error checking verification:", error);
     }
   };
 
@@ -83,7 +84,7 @@ const EmailVerification = () => {
           r: { a: 0, k: 0 },
           p: { a: 0, k: [200, 200, 0] },
           a: { a: 0, k: [0, 0, 0] },
-          s: { a: 0, k: [100, 100, 100] }
+          s: { a: 0, k: [100, 100, 100] },
         },
         ao: 0,
         shapes: [
@@ -94,13 +95,13 @@ const EmailVerification = () => {
                 d: 1,
                 ty: "el",
                 s: { a: 0, k: [100, 100] },
-                p: { a: 0, k: [0, 0] }
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                p: { a: 0, k: [0, 0] },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   return (
@@ -114,18 +115,14 @@ const EmailVerification = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Check Your Email
           </h2>
-          <p className="text-gray-600">
-            We've sent a verification link to
-          </p>
-          <p className="text-primary-600 font-medium break-all">
-            {email}
-          </p>
+          <p className="text-gray-600">We've sent a verification link to</p>
+          <p className="text-primary-600 font-medium break-all">{email}</p>
         </div>
 
         {/* Lottie Animation */}
         <div className="flex justify-center">
           <div className="w-48 h-48">
-            <Lottie 
+            <Lottie
               animationData={emailAnimation}
               loop={true}
               autoplay={true}
@@ -139,7 +136,7 @@ const EmailVerification = () => {
           <h3 className="text-lg font-semibold text-gray-800 text-center">
             Next Steps
           </h3>
-          
+
           <div className="space-y-3">
             <div className="flex items-start space-x-3">
               <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -149,7 +146,7 @@ const EmailVerification = () => {
                 Check your email inbox (and spam folder)
               </p>
             </div>
-            
+
             <div className="flex items-start space-x-3">
               <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                 <span className="text-white text-sm font-bold">2</span>
@@ -158,7 +155,7 @@ const EmailVerification = () => {
                 Click the verification link in the email
               </p>
             </div>
-            
+
             <div className="flex items-start space-x-3">
               <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                 <span className="text-white text-sm font-bold">3</span>
@@ -184,11 +181,9 @@ const EmailVerification = () => {
             disabled={!canResend}
             className="w-full flex justify-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
-            {canResend ? (
-              'Resend Verification Email'
-            ) : (
-              `Resend in ${countdown}s`
-            )}
+            {canResend
+              ? "Resend Verification Email"
+              : `Resend in ${countdown}s`}
           </button>
         </div>
 
@@ -196,7 +191,8 @@ const EmailVerification = () => {
         <div className="bg-gray-50 rounded-xl p-4">
           <h4 className="text-sm font-medium text-gray-800 mb-2">Need Help?</h4>
           <p className="text-xs text-gray-600 mb-3">
-            If you don't receive the email within a few minutes, check your spam folder or contact support.
+            If you don't receive the email within a few minutes, check your spam
+            folder or contact support.
           </p>
           <div className="flex space-x-4 text-xs">
             <a href="#" className="text-primary-600 hover:text-primary-700">
@@ -211,7 +207,7 @@ const EmailVerification = () => {
         {/* Back to Signup */}
         <div className="text-center">
           <button
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate("/signup")}
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
           >
             ← Back to Sign Up
@@ -223,3 +219,4 @@ const EmailVerification = () => {
 };
 
 export default EmailVerification;
+

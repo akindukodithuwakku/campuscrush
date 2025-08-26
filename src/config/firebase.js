@@ -5,13 +5,14 @@ import { getStorage } from 'firebase/storage';
 
 // Your Firebase configuration
 // Replace these with your actual Firebase project credentials
+
 const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "your-messaging-sender-id",
-  appId: "your-app-id"
+  apiKey: "AIzaSyDwJw1MSdCCcBpI9Lgxtpyx9kjqcaEluCs",
+  authDomain: "campuscrush-b22.firebaseapp.com",
+  projectId: "campuscrush-b22",
+  storageBucket: "campuscrush-b22.firebasestorage.app",
+  messagingSenderId: "480694292931",
+  appId: "1:480694292931:web:83594ed1d4ef713197ad76",
 };
 
 // Initialize Firebase
@@ -23,4 +24,5 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 export default app;
+
 
