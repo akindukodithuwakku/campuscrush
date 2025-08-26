@@ -1,0 +1,15 @@
+we are going to build a university chat application that enhances the communication of university students.
+This app is web based but mobile friendly (responsive)
+We use React.js for frontend, Node + Express for backend, We need MongoDB for db features. 
+also we should use Firebase for real-time chats.
+This app works like this: 
+Let's say I'm a student of the University of Moratuwa. I can use this app once after logging using my university email address, and confirms the verification email. After verification user will navigate to the profile section. There we should enter our data like, name, residence, DOB, gender, degree program, profile picture, faculty, current year of university (2nd yr), Interests and hobbies,  career expectations, clubs and societies enrolled etc. (data that can use to match people). then users can go to the browser section, this is where users find each other. Users should randomly see both male and female users (like Tinder). There must be options to categorize the users on preferences.  When using the browser section, it should work exactly like Tinder. if one user want to see the profile of another user he or she can go to the relevant profile by clicking on the card or that user showing in the browser section, if anyone of them is interested of chatting with the other person, then they can click a button "say hi". Then there should be a section called "chats", this is where users chat with each other. all the past chats should be saved like WhatsApp and should be encrypted.
+the chat section should include chat features, same as whatsapp. 
+also there should be important pages 
+*important:*
+when developing this project we should concern about users data safety. 
+there should be a strong privacy policy section to handle any confusions
+this is a education purpose development. but there should be a legal safety to the developer in any kind of misconfution in users or their data.
+there should be cookie policies and other standard data safety rules.
+***
+also when hosting this site, we should be able to play ads, (banner ads etc) so we can earn money from this project.
