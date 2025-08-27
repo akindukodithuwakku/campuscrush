@@ -1,18 +1,18 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Your Firebase configuration
-// Replace these with your actual Firebase project credentials
+// Using environment variables for security
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDwJw1MSdCCcBpI9Lgxtpyx9kjqcaEluCs",
-  authDomain: "campuscrush-b22.firebaseapp.com",
-  projectId: "campuscrush-b22",
-  storageBucket: "campuscrush-b22.firebasestorage.app",
-  messagingSenderId: "480694292931",
-  appId: "1:480694292931:web:83594ed1d4ef713197ad76",
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
@@ -24,5 +24,3 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 export default app;
-
-
