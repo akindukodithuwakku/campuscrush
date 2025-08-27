@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { getAnalytics } from "firebase/analytics";
 
 // Your Firebase configuration
 // Using environment variables for security
@@ -22,5 +23,23 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Initialize Analytics (optional)
+let analytics = null;
+if (typeof window !== "undefined") {
+  analytics = getAnalytics(app);
+}
+export { analytics };
+
+// Connect to emulators in development (optional)
+if (
+  process.env.NODE_ENV === "development" &&
+  process.env.REACT_APP_USE_FIREBASE_EMULATOR === "true"
+) {
+  // Uncomment these lines if you want to use Firebase emulators for local development
+  // connectAuthEmulator(auth, "http://localhost:9099");
+  // connectFirestoreEmulator(db, "localhost", 8080);
+  // connectStorageEmulator(storage, "localhost", 9199);
+}
 
 export default app;

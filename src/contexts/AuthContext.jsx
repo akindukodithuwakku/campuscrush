@@ -6,13 +6,22 @@ import {
   onAuthStateChanged,
   sendEmailVerification,
   updateProfile,
+  sendPasswordResetEmail,
+  deleteUser,
 } from "firebase/auth";
 import {
   doc,
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
   serverTimestamp,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 
@@ -31,9 +40,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
 
+  // Validate UOM email
+  const validateUOMEmail = (email) => {
+    const uomDomain = process.env.REACT_APP_UNIVERSITY_DOMAIN || "uom.lk";
+    return email.toLowerCase().endsWith(`@${uomDomain}`);
+  };
+
   // Sign up function
   const signup = async (email, password, displayName) => {
     try {
+      // Validate UOM email
+      if (!validateUOMEmail(email)) {
+        return {
+          success: false,
+          error: "Only University of Moratuwa email addresses are allowed",
+        };
+      }
+
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -53,12 +76,29 @@ export const AuthProvider = ({ children }) => {
         displayName: displayName,
         emailVerified: false,
         profileCompleted: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        isActive: true,
+        lastSeen: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        // Profile fields for matching
+        age: null,
+        bio: "",
+        interests: [],
+        photos: [],
+        preferences: {
+          ageRange: { min: 18, max: 30 },
+          maxDistance: 50,
+        },
+        // Privacy settings
+        privacy: {
+          showAge: true,
+          showLastSeen: false,
+        },
       });
 
       return { success: true, user: result.user };
     } catch (error) {
+      console.error("Signup error:", error);
       return { success: false, error: error.message };
     }
   };
@@ -139,6 +179,166 @@ export const AuthProvider = ({ children }) => {
     return userProfile && userProfile.profileCompleted;
   };
 
+  // Reset password
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error) {
+      console.error("Password reset error:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Delete user account
+  const deleteAccount = async () => {
+    if (!currentUser) {
+      return { success: false, error: "No user logged in" };
+    }
+
+    try {
+      // Delete user document from Firestore
+      await deleteDoc(doc(db, "users", currentUser.uid));
+
+      // Delete user authentication
+      await deleteUser(currentUser);
+
+      setCurrentUser(null);
+      setUserProfile(null);
+
+      return { success: true };
+    } catch (error) {
+      console.error("Delete account error:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Get potential matches
+  const getPotentialMatches = async () => {
+    if (!currentUser) return [];
+
+    try {
+      const usersRef = collection(db, "users");
+      const q = query(
+        usersRef,
+        where("uid", "!=", currentUser.uid),
+        where("profileCompleted", "==", true),
+        where("isActive", "==", true),
+        limit(10)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const matches = [];
+
+      querySnapshot.forEach((doc) => {
+        matches.push({ id: doc.id, ...doc.data() });
+      });
+
+      return matches;
+    } catch (error) {
+      console.error("Error getting matches:", error);
+      return [];
+    }
+  };
+
+  // Like a user
+  const likeUser = async (likedUserId) => {
+    if (!currentUser) return { success: false, error: "No user logged in" };
+
+    try {
+      const likeRef = doc(db, "likes", `${currentUser.uid}_${likedUserId}`);
+      await setDoc(likeRef, {
+        userId: currentUser.uid,
+        likedUserId: likedUserId,
+        timestamp: serverTimestamp(),
+      });
+
+      // Check if it's a match (mutual like)
+      const mutualLikeRef = doc(
+        db,
+        "likes",
+        `${likedUserId}_${currentUser.uid}`
+      );
+      const mutualLikeDoc = await getDoc(mutualLikeRef);
+
+      if (mutualLikeDoc.exists()) {
+        // It's a match! Create match document
+        const matchRef = doc(
+          db,
+          "matches",
+          `${currentUser.uid}_${likedUserId}`
+        );
+        await setDoc(matchRef, {
+          users: [currentUser.uid, likedUserId],
+          timestamp: serverTimestamp(),
+          lastMessage: null,
+          lastMessageTime: null,
+        });
+
+        return { success: true, isMatch: true };
+      }
+
+      return { success: true, isMatch: false };
+    } catch (error) {
+      console.error("Like user error:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Get user matches
+  const getUserMatches = async () => {
+    if (!currentUser) return [];
+
+    try {
+      const matchesRef = collection(db, "matches");
+      const q = query(
+        matchesRef,
+        where("users", "array-contains", currentUser.uid),
+        orderBy("timestamp", "desc")
+      );
+
+      const querySnapshot = await getDocs(q);
+      const matches = [];
+
+      for (const matchDoc of querySnapshot.docs) {
+        const matchData = matchDoc.data();
+        const otherUserId = matchData.users.find(
+          (uid) => uid !== currentUser.uid
+        );
+
+        // Get other user's profile
+        const otherUserDoc = await getDoc(doc(db, "users", otherUserId));
+        if (otherUserDoc.exists()) {
+          matches.push({
+            matchId: matchDoc.id,
+            ...matchData,
+            otherUser: { id: otherUserDoc.id, ...otherUserDoc.data() },
+          });
+        }
+      }
+
+      return matches;
+    } catch (error) {
+      console.error("Error getting matches:", error);
+      return [];
+    }
+  };
+
+  // Update last seen
+  const updateLastSeen = async () => {
+    if (!currentUser) return;
+
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      await updateDoc(userRef, {
+        lastSeen: serverTimestamp(),
+        isActive: true,
+      });
+    } catch (error) {
+      console.error("Error updating last seen:", error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -157,6 +357,17 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
+  // Update last seen on user activity
+  useEffect(() => {
+    if (currentUser && !loading) {
+      updateLastSeen();
+
+      // Update last seen every 5 minutes while user is active
+      const interval = setInterval(updateLastSeen, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser, loading]);
+
   const value = {
     currentUser,
     userProfile,
@@ -167,6 +378,13 @@ export const AuthProvider = ({ children }) => {
     getUserProfile,
     updateUserProfile,
     isProfileComplete,
+    resetPassword,
+    deleteAccount,
+    getPotentialMatches,
+    likeUser,
+    getUserMatches,
+    updateLastSeen,
+    validateUOMEmail,
   };
 
   return (
