@@ -45,13 +45,24 @@ const Login = () => {
       const result = await login(email, password);
 
       if (result.success) {
-        // Check if user already has a profile
-        if (result.userProfile && result.userProfile.profileCompleted) {
-          navigate("/chats");
-        } else {
+        console.log("🎉 Login successful:", result);
+
+        // Show success message before redirecting
+        if (result.message) {
+          // You can add a toast notification here if you want
+          console.log("📢", result.message);
+        }
+
+        // Determine where to redirect based on profile completion
+        if (result.needsOnboarding || !result.userProfile?.profileCompleted) {
+          console.log("🔄 Profile incomplete, redirecting to profile setup...");
           navigate("/profile-setup");
+        } else {
+          console.log("🚀 Profile complete, redirecting to main app...");
+          navigate("/dashboard");
         }
       } else {
+        console.error("❌ Login failed:", result.error);
         setError(result.error);
       }
     } catch (err) {

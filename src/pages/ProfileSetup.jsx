@@ -140,7 +140,10 @@ const ProfileSetup = () => {
     try {
       const result = await updateUserProfile(formData);
       if (result.success) {
-        navigate("/chats");
+        console.log(
+          "✅ Profile completed successfully, redirecting to main app"
+        );
+        navigate("/dashboard");
       } else {
         setError(result.error);
       }

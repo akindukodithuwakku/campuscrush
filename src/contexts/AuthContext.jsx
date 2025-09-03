@@ -9,21 +9,8 @@ import {
   sendPasswordResetEmail,
   deleteUser,
 } from "firebase/auth";
-import {
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  deleteDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  serverTimestamp,
-  orderBy,
-  limit,
-} from "firebase/firestore";
-import { auth, db } from "../config/firebase";
+import { auth } from "../config/firebase";
+import hybridApi from "../services/hybridApi";
 
 const AuthContext = createContext();
 
@@ -46,9 +33,24 @@ export const AuthProvider = ({ children }) => {
     return email.toLowerCase().endsWith(`@${uomDomain}`);
   };
 
-  // Sign up function
+  // Sign up function (Firebase Auth + MongoDB)
   const signup = async (email, password, displayName) => {
     try {
+      // Check if Firebase is properly configured
+      const isFirebaseConfigured =
+        process.env.REACT_APP_FIREBASE_API_KEY &&
+        process.env.REACT_APP_FIREBASE_PROJECT_ID &&
+        process.env.REACT_APP_FIREBASE_API_KEY !==
+          "your-actual-firebase-api-key";
+
+      if (!isFirebaseConfigured) {
+        return {
+          success: false,
+          error:
+            "Firebase is not properly configured. Please set up your Firebase credentials in the .env file. See FIREBASE_QUICK_SETUP.md for instructions.",
+        };
+      }
+
       // Validate UOM email
       if (!validateUOMEmail(email)) {
         return {
@@ -57,6 +59,7 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
+      // Create user in Firebase
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -69,55 +72,173 @@ export const AuthProvider = ({ children }) => {
       // Send email verification
       await sendEmailVerification(result.user);
 
-      // Create user profile in Firestore
-      await setDoc(doc(db, "users", result.user.uid), {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: displayName,
-        emailVerified: false,
-        profileCompleted: false,
-        isActive: true,
-        lastSeen: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        // Profile fields for matching
-        age: null,
-        bio: "",
-        interests: [],
-        photos: [],
-        preferences: {
-          ageRange: { min: 18, max: 30 },
-          maxDistance: 50,
-        },
-        // Privacy settings
-        privacy: {
-          showAge: true,
-          showLastSeen: false,
-        },
-      });
+      // Wait a moment for Firebase token to be ready
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      return { success: true, user: result.user };
+      // Register user profile in MongoDB backend
+      try {
+        const [firstName, ...lastNameParts] = displayName.split(" ");
+        const lastName = lastNameParts.join(" ") || "Unknown";
+
+        const mongoResult = await hybridApi.registerUserProfile({
+          firstName,
+          lastName,
+        });
+
+        setUserProfile(mongoResult.data.user);
+
+        return {
+          success: true,
+          user: result.user,
+          profile: mongoResult.data.user,
+        };
+      } catch (mongoError) {
+        console.error("MongoDB registration error:", mongoError);
+        // Firebase user created but MongoDB registration failed
+        // User can still login and complete registration later
+        return {
+          success: true,
+          user: result.user,
+          warning:
+            "Account created but profile registration incomplete. Please login to complete setup.",
+        };
+      }
     } catch (error) {
       console.error("Signup error:", error);
       return { success: false, error: error.message };
     }
   };
 
-  // Login function
+  // Login function (Firebase Auth + MongoDB)
   const login = async (email, password) => {
     try {
+      // Check if Firebase is properly configured
+      const isFirebaseConfigured =
+        process.env.REACT_APP_FIREBASE_API_KEY &&
+        process.env.REACT_APP_FIREBASE_PROJECT_ID &&
+        process.env.REACT_APP_FIREBASE_API_KEY !==
+          "your-actual-firebase-api-key";
+
+      if (!isFirebaseConfigured) {
+        return {
+          success: false,
+          error:
+            "Firebase is not properly configured. Please set up your Firebase credentials in the .env file. See FIREBASE_QUICK_SETUP.md for instructions.",
+        };
+      }
+
+      console.log("🔥 Starting Firebase authentication...");
+
+      // Step 1: Authenticate with Firebase
       const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log("✅ Firebase authentication successful:", result.user.email);
 
-      // Get user profile after successful login
-      const profile = await getUserProfile(result.user.uid);
+      // Step 2: Get Firebase ID token for backend communication
+      const idToken = await result.user.getIdToken(true);
+      console.log("🔥 Firebase ID token obtained successfully");
 
-      return {
-        success: true,
-        user: result.user,
-        userProfile: profile,
-      };
+      // Step 3: Login/sync with MongoDB backend
+      try {
+        console.log("🔄 Syncing with MongoDB backend...");
+        const mongoResult = await hybridApi.loginWithFirebase();
+        console.log("✅ MongoDB sync successful:", mongoResult.data.user);
+
+        setUserProfile(mongoResult.data.user);
+
+        // Check if profile is complete
+        const needsOnboarding = !mongoResult.data.user.profileCompleted;
+        console.log(
+          `📋 Profile completion status: ${
+            needsOnboarding ? "Incomplete - needs onboarding" : "Complete"
+          }`
+        );
+
+        return {
+          success: true,
+          user: result.user,
+          userProfile: mongoResult.data.user,
+          needsOnboarding: needsOnboarding,
+          message: needsOnboarding
+            ? "Login successful! Please complete your profile setup."
+            : "Login successful! Welcome back.",
+        };
+      } catch (mongoError) {
+        console.error("❌ MongoDB login error:", mongoError);
+
+        // Step 4: Auto-registration if user doesn't exist in MongoDB
+        if (
+          mongoError.message.includes("User not found") ||
+          mongoError.message.includes("404")
+        ) {
+          console.log(
+            "🆕 User not found in MongoDB, attempting auto-registration..."
+          );
+
+          try {
+            const displayName = result.user.displayName || "Unknown User";
+            const [firstName, ...lastNameParts] = displayName.split(" ");
+            const lastName = lastNameParts.join(" ") || "Unknown";
+
+            console.log("📝 Creating user profile with:", {
+              firstName,
+              lastName,
+            });
+
+            const registerResult = await hybridApi.registerUserProfile({
+              firstName,
+              lastName,
+            });
+
+            console.log(
+              "✅ Auto-registration successful:",
+              registerResult.data.user
+            );
+            setUserProfile(registerResult.data.user);
+
+            return {
+              success: true,
+              user: result.user,
+              userProfile: registerResult.data.user,
+              needsOnboarding: true, // New users always need onboarding
+              message:
+                "Account created successfully! Please complete your profile setup.",
+            };
+          } catch (registerError) {
+            console.error("❌ Auto-registration failed:", registerError);
+            return {
+              success: false,
+              error:
+                "Login successful but profile setup failed. Please try again.",
+            };
+          }
+        }
+
+        // Handle other MongoDB errors
+        return {
+          success: false,
+          error: mongoError.message || "Login failed. Please try again.",
+        };
+      }
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error("❌ Firebase login error:", error);
+
+      // Provide user-friendly error messages
+      let userMessage = "Login failed. Please try again.";
+
+      if (error.code === "auth/user-not-found") {
+        userMessage = "No account found with this email. Please sign up first.";
+      } else if (error.code === "auth/wrong-password") {
+        userMessage = "Incorrect password. Please try again.";
+      } else if (error.code === "auth/invalid-email") {
+        userMessage =
+          "Invalid email format. Please enter a valid email address.";
+      } else if (error.code === "auth/too-many-requests") {
+        userMessage = "Too many failed attempts. Please try again later.";
+      } else if (error.code === "auth/user-disabled") {
+        userMessage = "This account has been disabled. Please contact support.";
+      }
+
+      return { success: false, error: userMessage };
     }
   };
 
@@ -132,51 +253,96 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Get user profile from Firestore
-  const getUserProfile = async (uid) => {
+  // Get user profile from MongoDB
+  const getUserProfile = async () => {
     try {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        return userDoc.data();
-      }
-      return null;
+      const result = await hybridApi.getCurrentUser();
+      return result.data.user;
     } catch (error) {
       console.error("Error getting user profile:", error);
       return null;
     }
   };
 
-  // Update user profile
+  // Update user profile in MongoDB
   const updateUserProfile = async (profileData) => {
     if (!currentUser) {
       return { success: false, error: "No user logged in" };
     }
 
     try {
-      const userRef = doc(db, "users", currentUser.uid);
-      await updateDoc(userRef, {
-        ...profileData,
-        updatedAt: serverTimestamp(),
-        profileCompleted: true,
-      });
+      const result = await hybridApi.updateUserProfile(profileData);
 
-      // Update local state
-      setUserProfile((prev) => ({
-        ...prev,
-        ...profileData,
-        profileCompleted: true,
-      }));
+      if (result.status === "success") {
+        // Update local state
+        setUserProfile((prev) => ({
+          ...prev,
+          ...profileData,
+          profileCompleted: true,
+        }));
+        return { success: true };
+      }
 
-      return { success: true };
+      return {
+        success: false,
+        error: result.message || "Failed to update profile",
+      };
     } catch (error) {
       console.error("Error updating profile:", error);
-      return { success: false, error: "Failed to update profile" };
+      return {
+        success: false,
+        error: error.message || "Failed to update profile",
+      };
+    }
+  };
+
+  // Complete user profile (for profile setup)
+  const completeProfile = async (profileData) => {
+    if (!currentUser) {
+      return { success: false, error: "No user logged in" };
+    }
+
+    try {
+      const result = await hybridApi.completeProfile(profileData);
+
+      if (result.status === "success") {
+        setUserProfile(result.data.user);
+        return { success: true, user: result.data.user };
+      }
+
+      return {
+        success: false,
+        error: result.message || "Failed to complete profile",
+      };
+    } catch (error) {
+      console.error("Error completing profile:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to complete profile",
+      };
     }
   };
 
   // Check if user profile is complete
   const isProfileComplete = () => {
     return userProfile && userProfile.profileCompleted;
+  };
+
+  // Check profile completion status from backend
+  const checkProfileStatus = async () => {
+    if (!currentUser) return { profileCompleted: false, needsOnboarding: true };
+
+    try {
+      const result = await hybridApi.getProfileStatus();
+      return {
+        profileCompleted: result.data.profileCompleted,
+        needsOnboarding: result.data.needsOnboarding,
+        user: result.data.user,
+      };
+    } catch (error) {
+      console.error("Error checking profile status:", error);
+      return { profileCompleted: false, needsOnboarding: true };
+    }
   };
 
   // Reset password
@@ -213,140 +379,109 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Get potential matches
-  const getPotentialMatches = async () => {
+  // Get potential matches from MongoDB
+  const getPotentialMatches = async (preferences = {}) => {
     if (!currentUser) return [];
 
     try {
-      const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        where("uid", "!=", currentUser.uid),
-        where("profileCompleted", "==", true),
-        where("isActive", "==", true),
-        limit(10)
-      );
-
-      const querySnapshot = await getDocs(q);
-      const matches = [];
-
-      querySnapshot.forEach((doc) => {
-        matches.push({ id: doc.id, ...doc.data() });
-      });
-
-      return matches;
+      const result = await hybridApi.getPotentialMatches(preferences);
+      return result.data?.matches || [];
     } catch (error) {
       console.error("Error getting matches:", error);
       return [];
     }
   };
 
-  // Like a user
+  // Like a user (MongoDB)
   const likeUser = async (likedUserId) => {
     if (!currentUser) return { success: false, error: "No user logged in" };
 
     try {
-      const likeRef = doc(db, "likes", `${currentUser.uid}_${likedUserId}`);
-      await setDoc(likeRef, {
-        userId: currentUser.uid,
-        likedUserId: likedUserId,
-        timestamp: serverTimestamp(),
-      });
-
-      // Check if it's a match (mutual like)
-      const mutualLikeRef = doc(
-        db,
-        "likes",
-        `${likedUserId}_${currentUser.uid}`
-      );
-      const mutualLikeDoc = await getDoc(mutualLikeRef);
-
-      if (mutualLikeDoc.exists()) {
-        // It's a match! Create match document
-        const matchRef = doc(
-          db,
-          "matches",
-          `${currentUser.uid}_${likedUserId}`
-        );
-        await setDoc(matchRef, {
-          users: [currentUser.uid, likedUserId],
-          timestamp: serverTimestamp(),
-          lastMessage: null,
-          lastMessageTime: null,
-        });
-
-        return { success: true, isMatch: true };
-      }
-
-      return { success: true, isMatch: false };
+      const result = await hybridApi.likeUser(likedUserId);
+      return {
+        success: result.status === "success",
+        isMatch: result.data?.isMatch || false,
+        message: result.message,
+      };
     } catch (error) {
       console.error("Like user error:", error);
       return { success: false, error: error.message };
     }
   };
 
-  // Get user matches
+  // Pass a user (MongoDB)
+  const passUser = async (passedUserId) => {
+    if (!currentUser) return { success: false, error: "No user logged in" };
+
+    try {
+      const result = await hybridApi.passUser(passedUserId);
+      return {
+        success: result.status === "success",
+        message: result.message,
+      };
+    } catch (error) {
+      console.error("Pass user error:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Get user matches from MongoDB
   const getUserMatches = async () => {
     if (!currentUser) return [];
 
     try {
-      const matchesRef = collection(db, "matches");
-      const q = query(
-        matchesRef,
-        where("users", "array-contains", currentUser.uid),
-        orderBy("timestamp", "desc")
-      );
-
-      const querySnapshot = await getDocs(q);
-      const matches = [];
-
-      for (const matchDoc of querySnapshot.docs) {
-        const matchData = matchDoc.data();
-        const otherUserId = matchData.users.find(
-          (uid) => uid !== currentUser.uid
-        );
-
-        // Get other user's profile
-        const otherUserDoc = await getDoc(doc(db, "users", otherUserId));
-        if (otherUserDoc.exists()) {
-          matches.push({
-            matchId: matchDoc.id,
-            ...matchData,
-            otherUser: { id: otherUserDoc.id, ...otherUserDoc.data() },
-          });
-        }
-      }
-
-      return matches;
+      const result = await hybridApi.getUserMatches();
+      return result.data?.matches || [];
     } catch (error) {
       console.error("Error getting matches:", error);
       return [];
     }
   };
 
-  // Update last seen
-  const updateLastSeen = async () => {
-    if (!currentUser) return;
+  // Upload profile image
+  const uploadProfileImage = async (file) => {
+    if (!currentUser) return { success: false, error: "No user logged in" };
 
     try {
-      const userRef = doc(db, "users", currentUser.uid);
-      await updateDoc(userRef, {
-        lastSeen: serverTimestamp(),
-        isActive: true,
-      });
+      const result = await hybridApi.uploadProfileImage(file);
+      return {
+        success: result.status === "success",
+        imageUrl: result.data?.imageUrl,
+        message: result.message,
+      };
     } catch (error) {
-      console.error("Error updating last seen:", error);
+      console.error("Upload image error:", error);
+      return { success: false, error: error.message };
     }
   };
 
   useEffect(() => {
+    // Check if Firebase is properly configured before setting up auth listener
+    const isFirebaseConfigured =
+      process.env.REACT_APP_FIREBASE_API_KEY &&
+      process.env.REACT_APP_FIREBASE_PROJECT_ID &&
+      process.env.REACT_APP_FIREBASE_API_KEY !== "your-actual-firebase-api-key";
+
+    if (!isFirebaseConfigured) {
+      console.warn(
+        "🔥 Firebase not configured properly. Auth state listener not initialized."
+      );
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
 
       if (user) {
-        // Get user profile from Firestore
-        const profile = await getUserProfile(user.uid);
-        setUserProfile(profile);
+        // Get user profile from MongoDB
+        try {
+          const profile = await getUserProfile();
+          setUserProfile(profile);
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          setUserProfile(null);
+        }
       } else {
         setUserProfile(null);
       }
@@ -357,17 +492,6 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  // Update last seen on user activity
-  useEffect(() => {
-    if (currentUser && !loading) {
-      updateLastSeen();
-
-      // Update last seen every 5 minutes while user is active
-      const interval = setInterval(updateLastSeen, 5 * 60 * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [currentUser, loading]);
-
   const value = {
     currentUser,
     userProfile,
@@ -377,13 +501,16 @@ export const AuthProvider = ({ children }) => {
     logout,
     getUserProfile,
     updateUserProfile,
+    completeProfile,
     isProfileComplete,
+    checkProfileStatus,
     resetPassword,
     deleteAccount,
     getPotentialMatches,
     likeUser,
+    passUser,
     getUserMatches,
-    updateLastSeen,
+    uploadProfileImage,
     validateUOMEmail,
   };
 
