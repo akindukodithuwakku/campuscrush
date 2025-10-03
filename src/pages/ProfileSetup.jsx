@@ -4,7 +4,8 @@ import { useAuth } from "../contexts/AuthContext";
 import Lottie from "lottie-react";
 
 const ProfileSetup = () => {
-  const { currentUser, userProfile, updateUserProfile } = useAuth();
+  const { currentUser, userProfile, completeProfile, saveProfileStep } =
+    useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -39,21 +40,30 @@ const ProfileSetup = () => {
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Check if user is authenticated and email is verified
   useEffect(() => {
+    console.log("🔍 ProfileSetup - Current user:", currentUser);
+    console.log("🔍 ProfileSetup - User profile:", userProfile);
+
     if (!currentUser) {
+      console.log("❌ No current user, redirecting to login");
       navigate("/login");
       return;
     }
 
     if (!currentUser.emailVerified) {
+      console.log("❌ Email not verified, redirecting to email verification");
       navigate("/email-verification");
       return;
     }
 
+    console.log("✅ User authenticated and email verified");
+
     // Load existing profile data if available
     if (userProfile) {
+      console.log("📋 Loading existing profile data:", userProfile);
       setFormData((prev) => ({
         ...prev,
         ...userProfile,
@@ -103,27 +113,115 @@ const ProfileSetup = () => {
           formData.gender
         );
       case 2:
+        // Validate student ID format
+        const studentIdPattern = /^\d{6}[A-Z]$/;
         return (
           formData.studentId &&
+          studentIdPattern.test(formData.studentId) &&
           formData.faculty &&
           formData.department &&
           formData.yearOfStudy
         );
       case 3:
         return (
-          formData.bio && formData.interests.length > 0 && formData.lookingFor
+          formData.bio &&
+          formData.bio.length >= 10 &&
+          formData.interests.length >= 3 &&
+          formData.lookingFor
         );
       default:
         return true;
     }
   };
 
-  const nextStep = () => {
+  // Save current step data to database
+  const saveCurrentStep = async () => {
+    let stepData = {};
+
+    switch (currentStep) {
+      case 1:
+        stepData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
+          gender: formData.gender,
+        };
+        break;
+      case 2:
+        stepData = {
+          studentId: formData.studentId,
+          faculty: formData.faculty,
+          department: formData.department,
+          yearOfStudy: parseInt(formData.yearOfStudy),
+          semester: parseInt(formData.semester),
+        };
+        break;
+      case 3:
+        stepData = {
+          bio: formData.bio,
+          interests: formData.interests,
+          lookingFor: formData.lookingFor,
+        };
+        break;
+      case 4:
+        stepData = {
+          showEmail: formData.showEmail,
+          showPhone: formData.showPhone,
+        };
+        break;
+      default:
+        return { success: true };
+    }
+
+    try {
+      const result = await saveProfileStep(stepData, currentStep);
+      return result;
+    } catch (error) {
+      console.error(`Error saving step ${currentStep}:`, error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const nextStep = async () => {
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 4));
+      setIsSaving(true);
       setError("");
+
+      try {
+        // Save current step data before proceeding
+        const saveResult = await saveCurrentStep();
+
+        if (saveResult.success) {
+          setCurrentStep((prev) => Math.min(prev + 1, 4));
+          setError("");
+        } else {
+          setError(
+            saveResult.error || "Failed to save current step. Please try again."
+          );
+        }
+      } catch (error) {
+        setError("An error occurred while saving. Please try again.");
+      } finally {
+        setIsSaving(false);
+      }
     } else {
-      setError("Please fill in all required fields before proceeding.");
+      let errorMessage =
+        "Please fill in all required fields before proceeding.";
+
+      if (currentStep === 2) {
+        const studentIdPattern = /^\d{6}[A-Z]$/;
+        if (formData.studentId && !studentIdPattern.test(formData.studentId)) {
+          errorMessage = "Student ID must be in format: 224226C";
+        }
+      } else if (currentStep === 3) {
+        if (formData.bio && formData.bio.length < 10) {
+          errorMessage = "Bio must be at least 10 characters long.";
+        } else if (formData.interests.length < 3) {
+          errorMessage = "Please select at least 3 interests.";
+        }
+      }
+
+      setError(errorMessage);
     }
   };
 
@@ -138,7 +236,25 @@ const ProfileSetup = () => {
     setError("");
 
     try {
-      const result = await updateUserProfile(formData);
+      // First save the final step data
+      const saveResult = await saveCurrentStep();
+      if (!saveResult.success) {
+        setError(saveResult.error || "Failed to save final step data.");
+        return;
+      }
+
+      // Prepare data for backend validation
+      const profileData = {
+        ...formData,
+        yearOfStudy: parseInt(formData.yearOfStudy),
+        semester: parseInt(formData.semester),
+        // Ensure dateOfBirth is in ISO format
+        dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
+      };
+
+      console.log("📤 Completing profile with data:", profileData);
+
+      const result = await completeProfile(profileData);
       if (result.success) {
         console.log(
           "✅ Profile completed successfully, redirecting to main app"
@@ -148,6 +264,7 @@ const ProfileSetup = () => {
         setError(result.error);
       }
     } catch (err) {
+      console.error("❌ Profile completion error:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -343,9 +460,14 @@ const ProfileSetup = () => {
                       value={formData.studentId}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="e.g., E/20/123"
+                      placeholder="224226C"
+                      pattern="\d{6}[A-Z]"
+                      title="Student ID must be in format: 224226C"
                       required
                     />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Format: 224226C (6 digits followed by 1 letter)
+                    </p>
                   </div>
 
                   <div>
@@ -614,9 +736,36 @@ const ProfileSetup = () => {
                   <button
                     type="button"
                     onClick={nextStep}
-                    className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200"
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                   >
-                    Next
+                    {isSaving ? (
+                      <div className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Saving...
+                      </div>
+                    ) : (
+                      "Next"
+                    )}
                   </button>
                 ) : (
                   <button

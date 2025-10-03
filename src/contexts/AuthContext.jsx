@@ -296,6 +296,47 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Save profile step (progressive saving)
+  const saveProfileStep = async (stepData, stepNumber) => {
+    if (!currentUser) {
+      console.error("❌ No current user found");
+      return { success: false, error: "No user logged in" };
+    }
+
+    console.log("🔍 Current user details:", {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      emailVerified: currentUser.emailVerified,
+    });
+
+    try {
+      console.log(`💾 Saving profile step ${stepNumber}:`, stepData);
+
+      const result = await hybridApi.updateUserProfile(stepData);
+
+      if (result.status === "success") {
+        // Update local state with the saved data
+        setUserProfile((prev) => ({
+          ...prev,
+          ...stepData,
+        }));
+        console.log(`✅ Step ${stepNumber} saved successfully`);
+        return { success: true, user: result.data.user };
+      }
+
+      return {
+        success: false,
+        error: result.message || `Failed to save step ${stepNumber}`,
+      };
+    } catch (error) {
+      console.error(`Error saving profile step ${stepNumber}:`, error);
+      return {
+        success: false,
+        error: error.message || `Failed to save step ${stepNumber}`,
+      };
+    }
+  };
+
   // Complete user profile (for profile setup)
   const completeProfile = async (profileData) => {
     if (!currentUser) {
@@ -501,6 +542,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     getUserProfile,
     updateUserProfile,
+    saveProfileStep,
     completeProfile,
     isProfileComplete,
     checkProfileStatus,

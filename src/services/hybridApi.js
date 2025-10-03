@@ -1,10 +1,10 @@
-// Hybrid API service: Firebase Auth + MongoDB Backend
+// Firebase API service: Firebase Auth + Firestore Backend
 import { auth } from "../config/firebase";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
-class HybridApiService {
+class FirebaseApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
   }
@@ -20,16 +20,23 @@ class HybridApiService {
           "your-actual-firebase-api-key";
 
       if (!isFirebaseConfigured) {
+        console.error("❌ Firebase not configured properly");
         throw new Error(
           "Firebase is not properly configured. Please set up your Firebase credentials."
         );
       }
 
       const user = auth.currentUser;
+      console.log("🔍 Current Firebase user:", user ? user.uid : "No user");
+
       if (user) {
         // Force refresh the token to ensure it's valid
         const token = await user.getIdToken(true);
-        console.log("🔥 Firebase token obtained successfully");
+        console.log(
+          "🔥 Firebase token obtained successfully, length:",
+          token.length
+        );
+        console.log("🔥 Token preview:", token.substring(0, 50) + "...");
         return token;
       }
       console.warn("⚠️ No Firebase user found for token generation");
@@ -274,4 +281,4 @@ class HybridApiService {
   }
 }
 
-export default new HybridApiService();
+export default new FirebaseApiService();
