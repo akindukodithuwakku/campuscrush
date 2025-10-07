@@ -106,29 +106,14 @@ const ProfileSetup = () => {
   const validateStep = (step) => {
     switch (step) {
       case 1:
-        return (
-          formData.firstName &&
-          formData.lastName &&
-          formData.dateOfBirth &&
-          formData.gender
-        );
+        // Only require first and last name
+        return formData.firstName && formData.lastName;
       case 2:
-        // Validate student ID format
-        const studentIdPattern = /^\d{6}[A-Z]$/;
-        return (
-          formData.studentId &&
-          studentIdPattern.test(formData.studentId) &&
-          formData.faculty &&
-          formData.department &&
-          formData.yearOfStudy
-        );
+        // Make university info optional
+        return true; // Allow users to skip university info
       case 3:
-        return (
-          formData.bio &&
-          formData.bio.length >= 10 &&
-          formData.interests.length >= 3 &&
-          formData.lookingFor
-        );
+        // Make profile details optional
+        return true; // Allow users to skip profile details
       default:
         return true;
     }
@@ -208,16 +193,9 @@ const ProfileSetup = () => {
       let errorMessage =
         "Please fill in all required fields before proceeding.";
 
-      if (currentStep === 2) {
-        const studentIdPattern = /^\d{6}[A-Z]$/;
-        if (formData.studentId && !studentIdPattern.test(formData.studentId)) {
-          errorMessage = "Student ID must be in format: 224226C";
-        }
-      } else if (currentStep === 3) {
-        if (formData.bio && formData.bio.length < 10) {
-          errorMessage = "Bio must be at least 10 characters long.";
-        } else if (formData.interests.length < 3) {
-          errorMessage = "Please select at least 3 interests.";
+      if (currentStep === 3) {
+        if (formData.bio && formData.bio.length < 1) {
+          errorMessage = "Bio must be at least 1 character long.";
         }
       }
 
@@ -246,11 +224,23 @@ const ProfileSetup = () => {
       // Prepare data for backend validation
       const profileData = {
         ...formData,
-        yearOfStudy: parseInt(formData.yearOfStudy),
-        semester: parseInt(formData.semester),
-        // Ensure dateOfBirth is in ISO format
-        dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
+        // Only convert to int if value exists
+        yearOfStudy: formData.yearOfStudy
+          ? parseInt(formData.yearOfStudy)
+          : undefined,
+        semester: formData.semester ? parseInt(formData.semester) : undefined,
+        // Only convert date if value exists
+        dateOfBirth: formData.dateOfBirth
+          ? new Date(formData.dateOfBirth).toISOString()
+          : undefined,
       };
+
+      // Remove empty strings and undefined values
+      Object.keys(profileData).forEach((key) => {
+        if (profileData[key] === "" || profileData[key] === undefined) {
+          delete profileData[key];
+        }
+      });
 
       console.log("📤 Completing profile with data:", profileData);
 
@@ -452,7 +442,7 @@ const ProfileSetup = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Student ID *
+                      Student ID
                     </label>
                     <input
                       type="text"
@@ -460,40 +450,30 @@ const ProfileSetup = () => {
                       value={formData.studentId}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="224226C"
-                      pattern="\d{6}[A-Z]"
-                      title="Student ID must be in format: 224226C"
-                      required
+                      placeholder="Enter your student ID (optional)"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      Format: 224226C (6 digits followed by 1 letter)
+                      Enter your university student ID (optional)
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Faculty *
+                      Faculty
                     </label>
-                    <select
+                    <input
+                      type="text"
                       name="faculty"
                       value={formData.faculty}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      required
-                    >
-                      <option value="">Select faculty</option>
-                      <option value="engineering">Engineering</option>
-                      <option value="architecture">Architecture</option>
-                      <option value="it">Information Technology</option>
-                      <option value="business">Business</option>
-                      <option value="medicine">Medicine</option>
-                      <option value="science">Science</option>
-                    </select>
+                      placeholder="Enter your faculty (optional)"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Department *
+                      Department
                     </label>
                     <input
                       type="text"
@@ -501,24 +481,22 @@ const ProfileSetup = () => {
                       value={formData.department}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="e.g., Computer Science & Engineering"
-                      required
+                      placeholder="e.g., Computer Science & Engineering (optional)"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Year of Study *
+                        Year of Study
                       </label>
                       <select
                         name="yearOfStudy"
                         value={formData.yearOfStudy}
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        required
                       >
-                        <option value="">Year</option>
+                        <option value="">Select year (optional)</option>
                         <option value="1">1st Year</option>
                         <option value="2">2nd Year</option>
                         <option value="3">3rd Year</option>
@@ -529,16 +507,15 @@ const ProfileSetup = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Semester *
+                        Semester
                       </label>
                       <select
                         name="semester"
                         value={formData.semester}
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        required
                       >
-                        <option value="">Semester</option>
+                        <option value="">Select semester (optional)</option>
                         <option value="1">1st Semester</option>
                         <option value="2">2nd Semester</option>
                       </select>
@@ -557,7 +534,7 @@ const ProfileSetup = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bio *
+                    Bio
                   </label>
                   <textarea
                     name="bio"
@@ -565,17 +542,16 @@ const ProfileSetup = () => {
                     onChange={handleChange}
                     rows={4}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Tell others about yourself, your interests, and what you're looking for..."
-                    required
+                    placeholder="Tell others about yourself, your interests, and what you're looking for... (optional)"
                   />
                   <p className="mt-1 text-sm text-gray-500">
-                    {formData.bio.length}/500 characters
+                    {formData.bio.length}/1000 characters (optional)
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Interests * (Select at least 3)
+                    Interests (Select any that apply)
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[
@@ -618,25 +594,16 @@ const ProfileSetup = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Looking For *
+                    Looking For
                   </label>
-                  <select
+                  <input
+                    type="text"
                     name="lookingFor"
                     value={formData.lookingFor}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    required
-                  >
-                    <option value="">What are you looking for?</option>
-                    <option value="friendship">Friendship</option>
-                    <option value="relationship">Relationship</option>
-                    <option value="study-partner">Study Partner</option>
-                    <option value="casual-dating">Casual Dating</option>
-                    <option value="serious-relationship">
-                      Serious Relationship
-                    </option>
-                    <option value="networking">Networking</option>
-                  </select>
+                    placeholder="What are you looking for? (optional)"
+                  />
                 </div>
               </div>
             )}
@@ -650,7 +617,7 @@ const ProfileSetup = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Profile Picture
+                    Profile Picture (Optional)
                   </label>
                   <div className="flex items-center space-x-4">
                     <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -673,7 +640,7 @@ const ProfileSetup = () => {
                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        Recommended: Square image, max 5MB
+                        Optional: Square image, max 5MB. You can add this later.
                       </p>
                     </div>
                   </div>
@@ -733,40 +700,49 @@ const ProfileSetup = () => {
 
               <div className="flex space-x-4">
                 {currentStep < 4 ? (
-                  <button
-                    type="button"
-                    onClick={nextStep}
-                    disabled={isSaving}
-                    className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                  >
-                    {isSaving ? (
-                      <div className="flex items-center">
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Saving...
-                      </div>
-                    ) : (
-                      "Next"
-                    )}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={nextStep}
+                      disabled={isSaving}
+                      className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                    >
+                      {isSaving ? (
+                        <div className="flex items-center">
+                          <svg
+                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Saving...
+                        </div>
+                      ) : (
+                        "Next"
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(4)}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      Skip to Complete
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="submit"

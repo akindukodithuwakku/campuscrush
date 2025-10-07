@@ -404,9 +404,6 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // Delete user document from Firestore
-      await deleteDoc(doc(db, "users", currentUser.uid));
-
       // Delete user authentication
       await deleteUser(currentUser);
 

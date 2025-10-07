@@ -19,6 +19,7 @@ import Signup from "./pages/Signup";
 import EmailVerification from "./pages/EmailVerification";
 import ProfileSetup from "./pages/ProfileSetup";
 import ProfileOnboarding from "./pages/ProfileOnboarding";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   // Check if Firebase is properly configured
@@ -108,13 +109,25 @@ function App() {
               }
             />
 
-            {/* Default route for authenticated users */}
+            {/* Dashboard route */}
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <ProfileStatusGuard>
-                    <Navigate to="/browse" replace />
+                    <Dashboard />
+                  </ProfileStatusGuard>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Default route for authenticated users */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <ProfileStatusGuard>
+                    <Navigate to="/dashboard" replace />
                   </ProfileStatusGuard>
                 </ProtectedRoute>
               }

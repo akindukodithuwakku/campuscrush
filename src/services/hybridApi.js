@@ -279,6 +279,28 @@ class FirebaseApiService {
       body: JSON.stringify({ blockedUserId: userId }),
     });
   }
+
+  // Dashboard endpoints
+  async getDashboardStats() {
+    return this.request("/users/dashboard/stats");
+  }
+
+  async getDashboardMatches(limit = 10, offset = 0) {
+    return this.request(
+      `/users/dashboard/matches?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  async getPotentialMatchesForDashboard(limit = 20, offset = 0) {
+    return this.request(
+      `/users/dashboard/potential-matches?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  // User statistics
+  async getUserStats() {
+    return this.request("/users/stats/overview");
+  }
 }
 
 export default new FirebaseApiService();

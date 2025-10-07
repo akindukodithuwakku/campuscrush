@@ -1,0 +1,276 @@
+Software Requirements Specification (SRS) for University Chat Application
+Version 1.0
+Prepared by: Grok AI (Based on User Specifications)
+Date: October 07, 2025
+Project Name: University Chat Application (UniChat)
+Description: A web-based SaaS application enabling university students to connect, chat, and network in a Tinder-like swipe-and-match interface, focused on campus-specific interactions. Built using MERN stack with Firebase integration for authentication, real-time chats, storage, and matching features.
+
+1. Introduction
+1.1 Purpose
+The purpose of this SRS is to define the functional and non-functional requirements for the University Chat Application (UniChat). This document serves as a blueprint for development, testing, and deployment, ensuring all stakeholders understand the system's scope, features, and constraints. UniChat aims to provide a secure, engaging platform for students to form connections based on shared university affiliations, interests, and proximity.
+1.2 Scope
+UniChat is a web-based SaaS application targeted at university students. Key features include:
+
+User onboarding with university email verification.
+Swipe-based matching similar to Tinder.
+Real-time chatting with safety features.
+Admin panel for moderation and analytics.
+Integration with MERN stack for backend/frontend and Firebase for auth, database (Firestore), storage (for profiles/photos), and real-time features (e.g., Cloud Messaging for notifications).
+
+Out of scope:
+
+Native mobile apps (focus on responsive web).
+Integration with external social media beyond basic auth.
+Advanced AI matching (e.g., machine learning-based recommendations).
+Payment processing for premium features (assumed to be handled via third-party like Stripe, but not detailed here).
+
+1.3 Definitions, Acronyms, and Abbreviations
+
+SRS: Software Requirements Specification.
+MERN: MongoDB (database), Express.js (backend framework), React.js (frontend library), Node.js (runtime).
+Firebase: Google's platform for auth, Firestore (NoSQL DB), Storage, Cloud Functions, and Messaging.
+SaaS: Software as a Service.
+User: Registered student using the app for matching and chatting.
+Admin: Authorized personnel for moderation and management.
+Match: Mutual interest between two users, enabling chat.
+Swipe: User action to like (right) or pass (left) on profiles.
+
+1.4 References
+
+Previous user queries on app workflow and monetization.
+Firebase Documentation: https://firebase.google.com/docs.
+MERN Stack Best Practices: General web development standards.
+
+1.5 Overview
+This SRS is organized into sections covering overall description, specific requirements, and supporting information. Functional requirements are broken down by user and admin panels.
+
+2. Overall Description
+2.1 Product Perspective
+UniChat addresses the need for a niche, university-focused social platform, differentiating from general apps like Tinder by emphasizing campus verification, student-specific filters (e.g., majors, dorms), and safety. It builds on successful dating/networking apps but tailors to academic environments, potentially reducing isolation and fostering collaborations.
+2.2 Product Functions
+
+User Side: Onboarding, profile management, swiping/matching, chatting, notifications, and premium features.
+Admin Side: User moderation, analytics, content reports, and system configuration.
+Backend: Handle data storage, real-time sync, and matching logic.
+
+2.3 User Classes and Characteristics
+
+Students (Users): University students aged 18+, tech-savvy, seeking casual connections. Expect intuitive UI on web browsers.
+Admins: University staff or app moderators with basic tech skills, needing dashboards for oversight.
+Guests: Unregistered visitors who can view landing page but not interact.
+
+2.4 Operating Environment
+
+Frontend: React.js on web browsers (Chrome, Firefox, Safari; desktop/mobile responsive).
+Backend: Node.js with Express.js, hosted on cloud (e.g., Heroku, AWS).
+Database: MongoDB for structured data (e.g., user profiles); Firestore for real-time chats and matches.
+Other: Firebase for auth (email/password, Google OAuth), storage (photos), and push notifications.
+Hardware: Standard web servers; user devices with internet.
+Software: Compatible with modern browsers; no OS-specific dependencies.
+
+2.5 Design and Implementation Constraints
+
+Tech Stack: MERN for core development; Firebase for auth, real-time features, and storage to reduce boilerplate.
+Standards: Follow RESTful APIs for backend; JWT for auth tokens.
+Security: HTTPS mandatory; comply with GDPR/CCPA for data privacy.
+Scalability: Design for 10K+ users initially, using Firebase's scalable services.
+
+2.6 Assumptions and Dependencies
+
+Assumptions: Users have university emails; internet access is reliable; no malicious use beyond standard moderation.
+Dependencies: Firebase SDKs; MongoDB Atlas for cloud hosting; Third-party libraries (e.g., Socket.io if Firebase insufficient for chats).
+
+
+3. User and Admin Panel Feature Breakdown
+Before detailing functional requirements, here's a high-level breakdown of features by panel.
+3.1 User Panel Features
+
+Authentication: Sign up/login with university email verification; password reset.
+Profile Management: Create/edit profile (photos, bio, interests, filters like major/year).
+Matching System: Swipe interface; mutual matches; daily swipe limits (freemium).
+Chat System: Real-time messaging; media sharing; icebreakers; block/report.
+Notifications: In-app and push for matches, messages, events.
+Search/Filters: Basic (free) and advanced (premium) search by criteria.
+Settings: Privacy controls; account deletion; theme toggles.
+Premium Features: Unlimited swipes, ad-free, boosts (via in-app purchases).
+
+3.2 Admin Panel Features
+
+Dashboard: Overview stats (users, matches, reports).
+User Management: View/search users; suspend/delete accounts; verify emails.
+Moderation: Review reported content; manage bans; audit chats.
+Analytics: User engagement reports; retention metrics; export data.
+Content Management: Add campus events; moderate groups.
+Configuration: Set app rules (e.g., swipe limits); manage subscriptions.
+Logs/Security: Access audit logs; monitor suspicious activity.
+
+
+4. Specific Requirements
+4.1 External Interface Requirements
+4.1.1 User Interfaces
+
+Responsive web UI using React.js: Clean, mobile-friendly design with Material-UI or Bootstrap.
+Screens: Landing, Sign-up, Profile, Swipe Deck, Chat Window, Settings, Admin Dashboard.
+
+4.1.2 Hardware Interfaces
+
+None (web-based).
+
+4.1.3 Software Interfaces
+
+Firebase SDK: For auth, Firestore (chats/matches), Storage (photos), Cloud Functions (matching logic).
+MongoDB: For user data persistence.
+APIs: REST endpoints for profile CRUD, matching.
+
+4.1.4 Communication Interfaces
+
+HTTPS for all data transfer.
+WebSockets (via Firebase Realtime Database or Socket.io) for chats.
+
+4.2 Functional Requirements
+4.2.1 User Panel Functional Requirements
+
+FR-U1: Authentication
+
+System shall allow sign-up with university email verification via Firebase Auth.
+System shall support login/logout and password recovery.
+Priority: High.
+
+
+FR-U2: Profile Management
+
+Users shall create/edit profiles stored in MongoDB/Firestore.
+Upload photos to Firebase Storage (max 5, validated for size/format).
+Set preferences/filters (e.g., age, major) for matching.
+Priority: High.
+
+
+FR-U3: Matching System
+
+Display profile cards for swiping (fetch from Firestore).
+Record likes/passes; trigger match on mutual like (use Cloud Functions).
+Enforce daily limits (e.g., 50 free swipes); premium unlocks unlimited.
+Priority: High.
+
+
+FR-U4: Chat System
+
+Initiate chats on match using Firestore for real-time sync.
+Support text, emojis, images (via Storage).
+Features: Block user, report abuse, delete chat.
+Priority: High.
+
+
+FR-U5: Notifications
+
+Send in-app alerts and push notifications via Firebase Cloud Messaging for matches/messages.
+Users can toggle preferences.
+Priority: Medium.
+
+
+FR-U6: Search and Filters
+
+Basic search by name/major; advanced (premium) by dorm/online status.
+Use MongoDB queries for efficiency.
+Priority: Medium.
+
+
+FR-U7: Settings and Premium
+
+Manage privacy (e.g., hide profile).
+Integrate in-app purchases for premium (assumed Stripe API).
+Priority: Medium.
+
+
+
+4.2.2 Admin Panel Functional Requirements
+
+FR-A1: Authentication
+
+Separate admin login with role-based access (Firebase Auth with custom claims).
+Priority: High.
+
+
+FR-A2: Dashboard
+
+Display KPIs (active users, matches) using aggregated Firestore data.
+Priority: High.
+
+
+FR-A3: User Management
+
+Search/view user profiles; edit/suspend accounts.
+Export user data as CSV.
+Priority: High.
+
+
+FR-A4: Moderation
+
+Review flagged content; issue warnings/bans.
+Access chat logs for audits (with privacy compliance).
+Priority: High.
+
+
+FR-A5: Analytics
+
+Generate reports on engagement (e.g., swipe rates) using MongoDB aggregations.
+Visualize with charts (React libraries like Chart.js).
+Priority: Medium.
+
+
+FR-A6: Configuration
+
+Set global rules (e.g., verification thresholds).
+Manage campus-specific features (e.g., event promotions).
+Priority: Medium.
+
+
+
+4.3 Non-Functional Requirements
+4.3.1 Performance Requirements
+
+Response time: <2 seconds for swipes/chats.
+Scalability: Handle 1K concurrent users; auto-scale via Firebase.
+Uptime: 99.9% availability.
+
+4.3.2 Safety Requirements
+
+Data encryption: At rest (Firebase) and in transit (HTTPS).
+Verification: Mandatory .edu email to prevent non-students.
+
+4.3.3 Security Requirements
+
+Auth: JWT tokens; protect against SQL injection/XSS.
+Privacy: Anonymize data; user consent for sharing.
+Compliance: GDPR for data handling; age verification (18+).
+
+4.3.4 Software Quality Attributes
+
+Usability: Intuitive UI; accessibility (WCAG 2.1).
+Reliability: Error handling for offline scenarios (e.g., queue messages).
+Maintainability: Modular code; documentation for MERN/Firebase.
+Portability: Web-based, browser-agnostic.
+
+4.3.5 Business Rules
+
+Freemium model: Core free; premium for extras.
+Monetization: Subscriptions via SaaS billing.
+
+
+5. Supporting Information
+5.1 Appendix A: Data Models (High-Level)
+
+User Document (Firestore/MongoDB): { id, email, name, photos[], bio, interests[], preferences{}, matches[] }.
+Chat Document: { id, participants[], messages[{text, timestamp, sender}] }.
+Match Document: { user1, user2, timestamp }.
+
+5.2 Appendix B: Use Cases
+
+Use Case 1: User Onboarding - Actor: Student; Steps: Visit site > Sign up > Verify email > Set profile > Start swiping.
+Use Case 2: Admin Moderation - Actor: Admin; Steps: Login > View reports > Ban user > Log action.
+
+5.3 Appendix C: Testing Considerations
+
+Unit Tests: For MERN components (e.g., Jest for React/Node).
+Integration Tests: Firebase emulators for auth/chats.
+User Acceptance: Beta testing with sample students.
